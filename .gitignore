@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+*.db-journal
+.DS_Store
+.agents/
+.hallmark/
+.agents/
+skills-lock.json

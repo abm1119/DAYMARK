@@ -1,0 +1,6 @@
+<div class="flash {% if result.ok %}flash-success{% else %}flash-error{% endif %}">
+  <div class="font-medium">{{ result.msg }}</div>
+  {% if result.log %}
+    <pre class="mt-2 text-xs opacity-80 whitespace-pre-wrap overflow-x-auto">{{ result.log }}</pre>
+  {% endif %}
+</div>

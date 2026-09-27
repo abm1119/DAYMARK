@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}DAYMARK{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Workspace navigation">
+      <a href="{{ url_for('day_view') }}" class="brand">
+        <img class="brand-logo" src="{{ url_for('static', filename='daymark_logo.png') }}" alt="" /> DAYMARK
+      </a>
+      <p class="workspace-label">Workspace</p>
+      <nav class="sidebar-nav" aria-label="Primary">
+        <a href="{{ url_for('day_view') }}" class="nav-link" {% if request.endpoint == 'day_view' %}aria-current="page"{% endif %}>
+          <span class="nav-glyph" aria-hidden="true">◷</span> Day
+        </a>
+        <a href="{{ url_for('calendar_view') }}" class="nav-link" {% if request.endpoint == 'calendar_view' %}aria-current="page"{% endif %}>
+          <span class="nav-glyph" aria-hidden="true">▦</span> Calendar
+        </a>
+        <a href="{{ url_for('tasks_list') }}" class="nav-link" {% if request.endpoint in ['tasks_list', 'task_new', 'task_edit'] %}aria-current="page"{% endif %}>
+          <span class="nav-glyph" aria-hidden="true">☷</span> All tasks
+        </a>
+        <a href="{{ url_for('categories_list') }}" class="nav-link" {% if request.endpoint in ['categories_list', 'category_new', 'category_edit'] %}aria-current="page"{% endif %}>
+          <span class="nav-glyph" aria-hidden="true">▧</span> Categories
+        </a>
+        <a href="{{ url_for('git_sync') }}" class="nav-link" {% if request.endpoint == 'git_sync' %}aria-current="page"{% endif %}>
+          <span class="nav-glyph" aria-hidden="true">⟳</span> Git sync
+        </a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="local-note"><span class="local-dot" aria-hidden="true"></span>Saved locally</div>
+      </div>
+    </aside>
+
+    <div class="main-column">
+      <header class="topbar">
+        <a href="{{ url_for('day_view') }}" class="mobile-brand">
+          <img class="brand-logo" src="{{ url_for('static', filename='daymark_logo.png') }}" alt="" /> DAYMARK
+        </a>
+        <span class="workspace-title">Personal workspace</span>
+        <nav class="primary-nav" aria-label="Primary">
+          <a href="{{ url_for('day_view') }}" class="nav-link" {% if request.endpoint == 'day_view' %}aria-current="page"{% endif %}>Day</a>
+          <a href="{{ url_for('calendar_view') }}" class="nav-link" {% if request.endpoint == 'calendar_view' %}aria-current="page"{% endif %}>Calendar</a>
+          <a href="{{ url_for('tasks_list') }}" class="nav-link" {% if request.endpoint in ['tasks_list', 'task_new', 'task_edit'] %}aria-current="page"{% endif %}>All tasks</a>
+          <a href="{{ url_for('categories_list') }}" class="nav-link" {% if request.endpoint in ['categories_list', 'category_new', 'category_edit'] %}aria-current="page"{% endif %}>Categories</a>
+          <a href="{{ url_for('git_sync') }}" class="nav-link" {% if request.endpoint == 'git_sync' %}aria-current="page"{% endif %}>Sync</a>
+        </nav>
+        <div class="topbar-actions">
+          <a href="{{ url_for('task_new') }}" class="btn btn-primary">+ New task</a>
+        </div>
+      </header>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="content-shell flash-stack">
+            {% for cat, msg in messages %}
+              <div class="flash {% if cat == 'error' %}flash-error{% else %}flash-success{% endif %}">{{ msg }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <main class="content-shell">
+        {% block content %}{% endblock %}
+      </main>
+
+      <footer class="app-footer">DAYMARK · HTMX + SQLite · portable · Git-synced</footer>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

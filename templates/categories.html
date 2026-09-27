@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Categories · DAYMARK{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+  <h1 class="page-heading">Categories</h1>
+  <a href="{{ url_for('category_new') }}" class="btn btn-primary">+ Category</a>
+</div>
+
+<div class="grid gap-3 sm:grid-cols-2">
+  {% for c in categories %}
+    <div class="card category-card p-4 flex items-center gap-4">
+      <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+           style="background: {{ c.color }}22">
+        {{ c.icon }}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="font-medium">{{ c.name }}</div>
+        <div class="text-xs text-muted">{{ c.task_count }} task{{ 's' if c.task_count != 1 else '' }}</div>
+      </div>
+      <div class="flex gap-1">
+        <a href="{{ url_for('category_edit', cid=c.id) }}" class="btn btn-ghost text-xs">Edit</a>
+        <form method="post" action="{{ url_for('category_delete', cid=c.id) }}"
+              onsubmit="return confirm('Delete category? Tasks will keep going but lose the tag.')">
+          <button type="submit" class="btn btn-danger text-xs">Del</button>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <div class="empty-state text-muted col-span-2">
+      No categories yet.
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

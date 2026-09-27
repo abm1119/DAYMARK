@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{% if mode=='new' %}New Task{% else %}Edit Task{% endif %} · DAYMARK{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <h1 class="page-heading mb-6">
+    {% if mode=='new' %}New Task{% else %}Edit Task{% endif %}
+  </h1>
+
+  <form method="post" class="card p-6 space-y-5">
+    <div>
+      <label class="block text-sm text-muted mb-1.5">Title *</label>
+      <input type="text" name="title" required
+             value="{{ task.title if task and task.title is defined else '' }}"
+             class="input" placeholder="What needs doing?" autofocus>
+    </div>
+
+    <div>
+      <label class="block text-sm text-muted mb-1.5">Description</label>
+      <textarea name="description" rows="3" class="input"
+                placeholder="Notes, links, context…">{{ task.description if task and task.description is defined else '' }}</textarea>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm text-muted mb-1.5">Category</label>
+        <select name="category_id" class="input">
+          <option value="">— None —</option>
+          {% for c in categories %}
+            <option value="{{ c.id }}"
+              {% if task and task.category_id is defined and task.category_id == c.id %}selected{% endif %}>
+              {{ c.icon }} {{ c.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm text-muted mb-1.5">Due date</label>
+        <input type="date" name="due_date" class="input"
+               value="{{ task.due_date if task and task.due_date is defined else '' }}">
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm text-muted mb-1.5">Status</label>
+        <select name="status" class="input">
+          {% set st = task.status if task and task.status is defined else 'todo' %}
+          <option value="todo" {% if st=='todo' %}selected{% endif %}>Todo</option>
+          <option value="doing" {% if st=='doing' %}selected{% endif %}>Doing</option>
+          <option value="done" {% if st=='done' %}selected{% endif %}>Done</option>
+          <option value="blocked" {% if st=='blocked' %}selected{% endif %}>Blocked</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm text-muted mb-1.5">Priority</label>
+        <select name="priority" class="input">
+          {% set pr = task.priority if task and task.priority is defined else 2 %}
+          <option value="1" {% if pr==1 %}selected{% endif %}>1 · Low</option>
+          <option value="2" {% if pr==2 %}selected{% endif %}>2 · Medium</option>
+          <option value="3" {% if pr==3 %}selected{% endif %}>3 · High</option>
+          <option value="4" {% if pr==4 %}selected{% endif %}>4 · Urgent</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between pt-2">
+      <a href="{{ url_for('day_view') }}" class="btn btn-ghost">Cancel</a>
+      <button type="submit" class="btn btn-primary">
+        {% if mode=='new' %}Create Task{% else %}Save Changes{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

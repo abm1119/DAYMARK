@@ -1,0 +1,53 @@
+<div id="task-{{ task.id }}"
+    class="card task-card flex items-start group">
+  <!-- Status quick toggle -->
+  <form hx-post="{{ url_for('task_status', tid=task.id) }}"
+        hx-target="#task-{{ task.id }}"
+        hx-swap="outerHTML"
+        class="shrink-0 mt-0.5">
+    <select name="status" onchange="this.form.requestSubmit()"
+            class="status-select" aria-label="Status for {{ task.title }}">
+      <option value="todo" {% if task.status=='todo' %}selected{% endif %}>Todo</option>
+      <option value="doing" {% if task.status=='doing' %}selected{% endif %}>Doing</option>
+      <option value="done" {% if task.status=='done' %}selected{% endif %}>Done</option>
+      <option value="blocked" {% if task.status=='blocked' %}selected{% endif %}>Blocked</option>
+    </select>
+  </form>
+
+  <div class="flex-1 min-w-0">
+    <div class="flex items-start justify-between gap-2">
+      <a href="{{ url_for('task_edit', tid=task.id) }}"
+         class="task-title leading-snug {% if task.status=='done' %}is-done line-through{% endif %}">
+        {{ task.title }}
+      </a>
+      <div class="task-actions flex items-center gap-1">
+        <a href="{{ url_for('task_edit', tid=task.id) }}" class="btn btn-ghost text-xs px-2 py-1">Edit</a>
+        <form hx-post="{{ url_for('task_delete', tid=task.id) }}"
+              hx-target="#task-{{ task.id }}"
+              hx-swap="outerHTML"
+              hx-confirm="Delete this task?"
+              class="inline">
+          <button type="submit" class="btn btn-danger text-xs px-2 py-1">Del</button>
+        </form>
+      </div>
+    </div>
+
+    {% if task.description %}
+      <p class="text-sm text-muted mt-1 line-clamp-2">{{ task.description }}</p>
+    {% endif %}
+
+    <div class="task-meta">
+      {% if task.cat_name %}
+        <span class="badge" style="background: {{ task.cat_color }}22; color: {{ task.cat_color }}">
+          {{ task.cat_icon }} {{ task.cat_name }}
+        </span>
+      {% endif %}
+      {% set badge_cls, badge_label = status_badge(task.status) %}
+      <span class="badge {{ badge_cls }}">{{ badge_label }}</span>
+      <span class="text-muted">P{{ task.priority }} · {{ priority_label(task.priority) }}</span>
+      {% if task.due_date %}
+        <span class="text-muted">Due {{ task.due_date }}</span>
+      {% endif %}
+    </div>
+  </div>
+</div>

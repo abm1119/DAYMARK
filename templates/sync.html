@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Git Sync · DAYMARK{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <h1 class="page-heading mb-2">Git Sync</h1>
+  <p class="text-sm text-muted mb-6">
+    Keep your SQLite data and history in Git. Commit locally, then push/pull to stay in sync across machines.
+  </p>
+
+  {% if not is_git %}
+    <div class="card sync-warning p-6 mb-6">
+      <p class="text-sm">
+        This folder is not a Git repository yet. Run these once:
+      </p>
+      <pre class="code-panel mt-3">cd {{ request.script_root or '.' }}
+git init
+git add .
+git commit -m "init DAYMARK"
+# then add remote & push</pre>
+    </div>
+  {% endif %}
+
+  <div class="card p-5 mb-4">
+    <h2 class="text-sm font-medium text-muted uppercase tracking-wider mb-3">Working tree</h2>
+    <pre class="code-panel">{% if status %}{{ status }}{% else %}clean{% endif %}</pre>
+  </div>
+
+  <div class="card p-5 mb-6">
+    <h2 class="text-sm font-medium text-muted uppercase tracking-wider mb-3">Recent commits</h2>
+    <pre class="code-panel">{% if recent %}{{ recent }}{% else %}—{% endif %}</pre>
+  </div>
+
+  <div class="flex flex-wrap gap-3" id="sync-actions">
+    <form hx-post="{{ url_for('git_sync') }}" hx-target="#sync-result" hx-swap="innerHTML"
+          class="inline">
+      <input type="hidden" name="action" value="status">
+      <button type="submit" class="btn btn-ghost border border-border">Refresh status</button>
+    </form>
+    <form hx-post="{{ url_for('git_sync') }}" hx-target="#sync-result" hx-swap="innerHTML"
+          class="inline flex gap-2 items-center">
+      <input type="hidden" name="action" value="commit">
+      <input type="text" name="message" placeholder="Commit message" class="input w-48" value="DAYMARK sync">
+      <button type="submit" class="btn btn-primary">Commit data/</button>
+    </form>
+    <form hx-post="{{ url_for('git_sync') }}" hx-target="#sync-result" hx-swap="innerHTML"
+          class="inline">
+      <input type="hidden" name="action" value="push">
+      <button type="submit" class="btn btn-ghost border border-border">Push</button>
+    </form>
+    <form hx-post="{{ url_for('git_sync') }}" hx-target="#sync-result" hx-swap="innerHTML"
+          class="inline">
+      <input type="hidden" name="action" value="pull">
+      <button type="submit" class="btn btn-ghost border border-border">Pull</button>
+    </form>
+  </div>
+
+  <div id="sync-result" class="mt-4"></div>
+</div>
+{% endblock %}

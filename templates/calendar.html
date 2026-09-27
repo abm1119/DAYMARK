@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Calendar · DAYMARK{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+  <h1 class="page-heading">{{ month_name }}</h1>
+  <div class="flex items-center gap-2">
+    <a href="{{ url_for('calendar_view', year=prev_year, month=prev_month) }}"
+       class="btn btn-ghost border border-border">←</a>
+    <a href="{{ url_for('calendar_view') }}" class="btn btn-ghost border border-border">Today</a>
+    <a href="{{ url_for('calendar_view', year=next_year, month=next_month) }}"
+       class="btn btn-ghost border border-border">→</a>
+  </div>
+</div>
+
+<div class="card calendar-surface">
+  <div class="calendar-weekdays">
+    <div class="py-2">Mon</div>
+    <div class="py-2">Tue</div>
+    <div class="py-2">Wed</div>
+    <div class="py-2">Thu</div>
+    <div class="py-2">Fri</div>
+    <div class="py-2">Sat</div>
+    <div class="py-2">Sun</div>
+  </div>
+  <div class="calendar-grid">
+    {% for cell in cells %}
+      {% if cell is none %}
+        <div class="calendar-empty"></div>
+      {% else %}
+        {% set ds = cell.isoformat() %}
+        {% set stats = day_stats.get(ds, {}) %}
+        <a href="{{ url_for('day_view', day=ds) }}"
+             class="calendar-day {% if ds == today %}is-current{% endif %}">
+            <div class="calendar-number">
+            {{ cell.day }}
+          </div>
+          {% if stats.total %}
+            <div class="mt-1.5 flex flex-wrap gap-1">
+              {% if stats.todo %}<span class="w-1.5 h-1.5 rounded-full bg-slate-400" title="{{ stats.todo }} todo"></span>{% endif %}
+              {% if stats.doing %}<span class="w-1.5 h-1.5 rounded-full bg-amber-400" title="{{ stats.doing }} doing"></span>{% endif %}
+              {% if stats.done %}<span class="w-1.5 h-1.5 rounded-full bg-emerald-400" title="{{ stats.done }} done"></span>{% endif %}
+              {% if stats.blocked %}<span class="w-1.5 h-1.5 rounded-full bg-rose-400" title="{{ stats.blocked }} blocked"></span>{% endif %}
+            </div>
+            <div class="calendar-count">{{ stats.total }} task{{ 's' if stats.total != 1 else '' }}</div>
+          {% endif %}
+        </a>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+<div class="mt-6 flex flex-wrap gap-4 text-xs text-muted">
+  <span class="calendar-legend"><span class="calendar-legend-dot" style="background: var(--color-status-todo)"></span> Todo</span>
+  <span class="calendar-legend"><span class="calendar-legend-dot" style="background: var(--color-status-doing)"></span> Doing</span>
+  <span class="calendar-legend"><span class="calendar-legend-dot" style="background: var(--color-status-done)"></span> Done</span>
+  <span class="calendar-legend"><span class="calendar-legend-dot" style="background: var(--color-status-blocked)"></span> Blocked</span>
+</div>
+{% endblock %}

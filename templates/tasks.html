@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}All Tasks · DAYMARK{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+  <h1 class="page-heading">All Tasks</h1>
+  <a href="{{ url_for('task_new') }}" class="btn btn-primary">+ Task</a>
+</div>
+
+<!-- Filters -->
+<form method="get" class="card p-4 mb-6 flex flex-wrap gap-3 items-end">
+  <div class="flex-1 min-w-[140px] search-field">
+    <label class="block text-xs text-muted mb-1">Search</label>
+    <input type="text" name="q" value="{{ q }}" placeholder="Title or notes…" class="input">
+  </div>
+  <div>
+    <label class="block text-xs text-muted mb-1">Status</label>
+    <select name="status" class="input w-auto">
+      <option value="all" {% if current_status=='all' %}selected{% endif %}>All</option>
+      <option value="todo" {% if current_status=='todo' %}selected{% endif %}>Todo</option>
+      <option value="doing" {% if current_status=='doing' %}selected{% endif %}>Doing</option>
+      <option value="done" {% if current_status=='done' %}selected{% endif %}>Done</option>
+      <option value="blocked" {% if current_status=='blocked' %}selected{% endif %}>Blocked</option>
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs text-muted mb-1">Category</label>
+    <select name="cat" class="input w-auto">
+      <option value="all" {% if current_cat=='all' %}selected{% endif %}>All</option>
+      {% for c in categories %}
+        <option value="{{ c.id }}" {% if current_cat==c.id|string %}selected{% endif %}>
+          {{ c.icon }} {{ c.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary">Filter</button>
+</form>
+
+{% if tasks %}
+  <div class="space-y-2">
+    {% for task in tasks %}
+      {% include "partials/task_card.html" %}
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state text-muted">
+    No tasks match your filters.
+  </div>
+{% endif %}
+{% endblock %}
