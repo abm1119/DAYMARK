@@ -1,0 +1,69 @@
+classDiagram
+    class TodoApp {
+        +Flask app
+        +secret_key
+        +DB_PATH
+        +DATA_DIR
+        +get_db()
+        +init_db()
+        +ensure_db()
+    }
+
+    class Database {
+        +connection
+        +get_db()
+        +close_db()
+        +init_db()
+    }
+
+    class TodoItem {
+        +id: int
+        +title: str
+        +description: str
+        +due_date: str
+        +status: str
+        +priority: int
+        +create()
+        +update()
+        +delete()
+        +mark_complete()
+    }
+
+    class Category {
+        +id: int
+        +name: str
+        +create()
+        +update()
+        +delete()
+    }
+
+    class ViewHandler {
+        +index()
+        +day_view()
+        +calendar_view()
+        +tasks_list()
+        +task_new()
+        +task_edit()
+        +task_status()
+        +task_delete()
+        +categories_list()
+        +category_new()
+        +category_edit()
+        +category_delete()
+        +git_sync()
+        +api_stats()
+    }
+
+    class GitSync {
+        +sync()
+        +commit()
+        +push()
+        +pull()
+    }
+
+    TodoApp --> Database : uses
+    TodoApp --> ViewHandler : contains
+    ViewHandler --> TodoItem : manages
+    ViewHandler --> Category : manages
+    TodoApp --> GitSync : integrates
+    Category "1" --* "0..*" TodoItem : contains

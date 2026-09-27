@@ -1,0 +1,47 @@
+flowchart TD
+    Start([User Request]) --> EnsureDB[Ensure DB Initialized]
+    EnsureDB --> Router{Route Handler}
+
+    Router -->|/| Index[Load Index View]
+    Router -->|/day| DayView[Load Day View]
+    Router -->|/calendar| CalView[Load Calendar View]
+    Router -->|/sync| GitSync[Git Sync Handler]
+
+    Router --> AuthCheck{Session Valid?}
+    AuthCheck -->|No| Login[Show Login Page]
+    Login -->|Submit Credentials| VerifyCreds[Verify Credentials]
+    VerifyCreds -->|Success| SetSession[Set Session Cookie]
+    VerifyCreds -->|Failure| Login
+    SetSession --> Router
+
+    AuthCheck -->|Yes| CRUDRouter{CRUD Route}
+
+    subgraph TaskOps
+        direction TB
+        TList[GET /tasks] --> TNew[POST /task/new]
+        TNew --> TEdit[POST /task/:id/edit]
+        TEdit --> TStatus[POST /task/:id/status]
+        TStatus --> TDelete[POST /task/:id/delete]
+    end
+
+    subgraph CategoryOps
+        direction TB
+        CList[GET /categories] --> CNew[POST /category/new]
+        CNew --> CEdit[POST /category/:id/edit]
+        CEdit --> CDelete[POST /category/:id/delete]
+    end
+
+    CRUDRouter --> TaskOps
+    CRUDRouter --> CategoryOps
+    CRUDRouter -->|GET /api/stats| ApiStats[Fetch Stats JSON]
+
+    TaskOps --> DB[(SQLite DB)]
+    CategoryOps --> DB
+    ApiStats --> DB
+    GitSync --> Git[(Git Repository)]
+    Git -.-> DB
+
+    DB --> Render[Render Templates]
+    ApiStats --> Response[Return JSON Response]
+    Render --> End([Client View])
+    Response --> End
