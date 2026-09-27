@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="static/daymark_logo.png" alt="DAYMARK Logo" width="100" height="100" style="border-radius: 12px; object-fit: cover;" />
+  <img src="static/daymark_logo_wh.png" alt="DAYMARK Logo" width="100" height="100" style="border-radius: 12px; object-fit: cover;" />
 </p>
 
 # DAYMARK
