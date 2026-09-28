@@ -46,8 +46,10 @@
       <span class="badge {{ badge_cls }}">{{ badge_label }}</span>
       <span class="text-muted">P{{ task.priority }} · {{ priority_label(task.priority) }}</span>
       {% if task.due_date %}
-        <span class="text-muted">Due {{ task.due_date }}</span>
+        <span class="text-muted">Planned {{ task.due_date }}</span>
       {% endif %}
+      {% if task.deadline %}<span class="text-muted">Deadline {{ task.deadline }}</span>{% endif %}
+      {% if task.series_id %}<span class="badge recurrence-badge">Repeats</span>{% endif %}
     </div>
   </div>
 </div>
