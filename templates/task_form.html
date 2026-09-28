@@ -35,11 +35,47 @@
         </select>
       </div>
       <div>
-        <label class="block text-sm text-muted mb-1.5">Due date</label>
+        <label class="block text-sm text-muted mb-1.5">Planned date</label>
         <input type="date" name="due_date" class="input"
                value="{{ task.due_date if task and task.due_date is defined else '' }}">
       </div>
+      <div>
+        <label class="block text-sm text-muted mb-1.5">Deadline</label>
+        <input type="date" name="deadline" class="input"
+               value="{{ task.deadline if task and task.deadline is defined else '' }}">
+      </div>
     </div>
+
+    {% if mode=='new' %}
+      <fieldset class="space-y-2">
+        <legend class="block text-sm text-muted mb-1.5">Repeat</legend>
+        <div class="grid grid-cols-3 gap-3">
+          <label>
+            <span class="sr-only">Repeat interval</span>
+            <input type="number" name="repeat_interval" class="input" min="1" max="365"
+                   value="{{ task.repeat_interval if task and task.repeat_interval is defined else 1 }}">
+          </label>
+          <label>
+            <span class="sr-only">Repeat unit</span>
+            {% set unit = task.repeat_unit if task and task.repeat_unit is defined else 'none' %}
+            <select name="repeat_unit" class="input">
+              <option value="none" {% if unit=='none' %}selected{% endif %}>Once</option>
+              <option value="day" {% if unit=='day' %}selected{% endif %}>Day(s)</option>
+              <option value="week" {% if unit=='week' %}selected{% endif %}>Week(s)</option>
+              <option value="month" {% if unit=='month' %}selected{% endif %}>Month(s)</option>
+            </select>
+          </label>
+          <label>
+            <span class="sr-only">Number of occurrences</span>
+            <input type="number" name="repeat_count" class="input" min="1" max="366"
+                   value="{{ task.repeat_count if task and task.repeat_count is defined else 1 }}">
+          </label>
+        </div>
+        <p class="text-xs text-muted">Interval · unit · total occurrences (up to 366)</p>
+      </fieldset>
+    {% elif task and task.series_id %}
+      <p class="text-sm text-muted">This is one occurrence in a repeating series. Changes here affect this occurrence only.</p>
+    {% endif %}
 
     <div class="grid grid-cols-2 gap-4">
       <div>

@@ -39,7 +39,6 @@
         <div class="local-note"><span class="local-dot" aria-hidden="true"></span>Saved locally</div>
       </div>
     </aside>
-
     <div class="main-column">
       <header class="topbar">
         <a href="{{ url_for('day_view') }}" class="mobile-brand">
@@ -73,7 +72,98 @@
       </main>
 
       <footer class="app-footer">DAYMARK · HTMX + SQLite · portable · Git-synced</footer>
+    </div>
   </div>
+  <section class="agent-widget" aria-label="DAYMARK assistant">
+    <div id="agent-panel" class="agent-panel" role="dialog" aria-labelledby="agent-title" hidden>
+      <header class="agent-header">
+        <div>
+          <h2 id="agent-title">DAYMARK assistant</h2>
+          <p>Task management · Groq</p>
+        </div>
+        <button type="button" class="agent-close" id="agent-close" aria-label="Close assistant">×</button>
+      </header>
+      <div id="agent-messages" class="agent-messages" aria-live="polite">
+        <p class="agent-message agent-message-assistant">Tell me what you want to plan, update, find, or remove.</p>
+      </div>
+      <form id="agent-form" class="agent-form">
+        <label class="sr-only" for="agent-input">Message the task assistant</label>
+        <textarea id="agent-input" rows="2" maxlength="2000" placeholder="Ask DAYMARK to manage tasks…" required></textarea>
+        <button type="submit" id="agent-send" class="btn btn-primary" aria-label="Send message" title="Send message">↑</button>
+      </form>
+      <p class="agent-footnote">Task changes are applied immediately.</p>
+    </div>
+    <button type="button" id="agent-toggle" class="agent-toggle" aria-label="Open task assistant" aria-expanded="false" aria-controls="agent-panel" title="Open task assistant">
+      <span aria-hidden="true">✦</span>
+    </button>
+  </section>
   {% block scripts %}{% endblock %}
+  <script>
+    (() => {
+      const panel = document.getElementById('agent-panel');
+      const toggle = document.getElementById('agent-toggle');
+      const close = document.getElementById('agent-close');
+      const form = document.getElementById('agent-form');
+      const input = document.getElementById('agent-input');
+      const send = document.getElementById('agent-send');
+      const messagesNode = document.getElementById('agent-messages');
+      const history = [];
+
+      function setOpen(open) {
+        panel.hidden = !open;
+        toggle.setAttribute('aria-expanded', String(open));
+        if (open) input.focus();
+      }
+
+      function addMessage(role, content, pending = false) {
+        const message = document.createElement('p');
+        message.className = `agent-message agent-message-${role}${pending ? ' agent-pending' : ''}`;
+        message.textContent = content;
+        messagesNode.append(message);
+        messagesNode.scrollTop = messagesNode.scrollHeight;
+        return message;
+      }
+
+      toggle.addEventListener('click', () => setOpen(panel.hidden));
+      close.addEventListener('click', () => setOpen(false));
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !panel.hidden) setOpen(false);
+      });
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          form.requestSubmit();
+        }
+      });
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const content = input.value.trim();
+        if (!content || send.disabled) return;
+        history.push({ role: 'user', content });
+        addMessage('user', content);
+        input.value = '';
+        send.disabled = true;
+        const pending = addMessage('assistant', 'Working…', true);
+        try {
+          const response = await fetch('{{ url_for("agent_chat") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: history.slice(-12) })
+          });
+          const result = await response.json();
+          pending.remove();
+          if (!response.ok) throw new Error(result.error || 'The assistant could not complete that request.');
+          history.push({ role: 'assistant', content: result.reply });
+          addMessage('assistant', result.reply);
+        } catch (error) {
+          pending.remove();
+          addMessage('assistant', error.message || 'The assistant could not reach Groq.');
+        } finally {
+          send.disabled = false;
+          input.focus();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
