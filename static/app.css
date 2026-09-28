@@ -186,6 +186,7 @@ input[type="color"].input { min-height: 40px; padding: 4px; }
   box-shadow: 0 5px 20px oklch(22% 0.008 75 / 18%); cursor: pointer;
   transition: transform var(--dur-short) var(--ease-out), background var(--dur-short) ease;
 }
+.agent-logo { width: 34px; height: 34px; border-radius: 50%; object-fit: contain; }
 .agent-toggle:hover { background: var(--color-accent-hover); transform: translateY(-2px); }
 .agent-panel {
   position: absolute; right: 0; bottom: 62px; display: flex; flex-direction: column;

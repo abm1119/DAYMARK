@@ -94,7 +94,7 @@
       <p class="agent-footnote">Task changes are applied immediately.</p>
     </div>
     <button type="button" id="agent-toggle" class="agent-toggle" aria-label="Open task assistant" aria-expanded="false" aria-controls="agent-panel" title="Open task assistant">
-      <span aria-hidden="true">✦</span>
+      <img class="agent-logo" src="{{ url_for('static', filename='daymark_logo.png') }}" alt="">
     </button>
   </section>
   {% block scripts %}{% endblock %}
