@@ -16,6 +16,7 @@ import uuid
 from datetime import datetime, date, timedelta
 from pathlib import Path
 from functools import wraps
+from dotenv import load_dotenv
 
 from flask import Flask, render_template, request, redirect, url_for, g, flash, jsonify
 
@@ -24,6 +25,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "edge-todo-dev-key-change-me")
 
 DB_PATH = Path(__file__).parent / "data" / "todo.db"
 DATA_DIR = Path(__file__).parent / "data"
+load_dotenv(Path(__file__).parent / ".env")
 
 
 def get_db():
@@ -463,7 +465,7 @@ def task_edit(tid):
 AGENT_TOOLS = [
     {"type": "function", "function": {"name": "list_tasks", "description": "Find tasks by optional title/description query, status, and planned date.", "parameters": {"type": "object", "properties": {"query": {"type": "string"}, "status": {"type": "string", "enum": ["todo", "doing", "done", "blocked"]}, "due_date": {"type": "string", "description": "YYYY-MM-DD"}, "limit": {"type": "integer"}}}}},
     {"type": "function", "function": {"name": "list_categories", "description": "List available task categories and their IDs.", "parameters": {"type": "object", "properties": {}}}},
-    {"type": "function", "function": {"name": "create_task", "description": "Create one task or a recurring series of individually scheduled tasks.", "parameters": {"type": "object", "properties": {"title": {"type": "string"}, "description": {"type": "string"}, "category_id": {"type": ["integer", "null"]}, "due_date": {"type": ["string", "null"], "description": "YYYY-MM-DD"}, "deadline": {"type": ["string", "null"], "description": "YYYY-MM-DD"}, "status": {"type": "string", "enum": ["todo", "doing", "done", "blocked"]}, "priority": {"type": "integer", "minimum": 1, "maximum": 4}, "repeat_unit": {"type": "string", "enum": ["none", "day", "week", "month"]}, "repeat_interval": {"type": "integer", "minimum": 1, "maximum": 365}, "repeat_count": {"type": "integer", "minimum": 1, "maximum": 366}}, "required": ["title"]}}},
+    {"type": "function", "function": {"name": "create_task", "description": "Create one task or a recurring series of individually scheduled tasks.", "parameters": {"type": "object", "properties": {"title": {"type": "string"}, "description": {"type": "string"}, "category_id": {"type": ["integer", "null"]}, "due_date": {"type": ["string", "null"], "description": "YYYY-MM-DD"}, "deadline": {"type": ["string", "null"], "description": "YYYY-MM-DD"}, "status": {"type": "string", "enum": ["todo", "doing", "done", "blocked"]}, "priority": {"type": "integer", "minimum": 1, "maximum": 4}, "repeat_unit": {"type": "string", "enum": ["none", "day", "week", "month"]}, "repeat_interval": {"type": ["integer", "null"], "minimum": 1, "maximum": 365}, "repeat_count": {"type": ["integer", "null"], "minimum": 1, "maximum": 366}}, "required": ["title"]}}},
     {"type": "function", "function": {"name": "update_task", "description": "Update one task occurrence by its task ID; only supplied fields change.", "parameters": {"type": "object", "properties": {"task_id": {"type": "integer"}, "title": {"type": "string"}, "description": {"type": "string"}, "category_id": {"type": ["integer", "null"]}, "due_date": {"type": ["string", "null"]}, "deadline": {"type": ["string", "null"]}, "status": {"type": "string", "enum": ["todo", "doing", "done", "blocked"]}, "priority": {"type": "integer", "minimum": 1, "maximum": 4}}, "required": ["task_id"]}}},
     {"type": "function", "function": {"name": "delete_task", "description": "Permanently delete one task by ID. Only call when the user explicitly asks to delete/remove that task.", "parameters": {"type": "object", "properties": {"task_id": {"type": "integer"}}, "required": ["task_id"]}}},
 ]
@@ -506,11 +508,14 @@ def run_agent_tool(db, name, arguments):
         priority = int(arguments.get("priority", 2))
         if status not in ("todo", "doing", "done", "blocked") or priority not in range(1, 5):
             raise ValueError("Invalid task status or priority")
+        repeat_interval = arguments.get("repeat_interval")
+        repeat_count = arguments.get("repeat_count")
         count = add_task_occurrences(
             db, title, str(arguments.get("description", "")), arguments.get("category_id"),
             arguments.get("due_date"), arguments.get("deadline"), status, priority,
-            arguments.get("repeat_unit", "none"), int(arguments.get("repeat_interval", 1)),
-            int(arguments.get("repeat_count", 1)),
+            arguments.get("repeat_unit") or "none",
+            int(repeat_interval) if repeat_interval is not None else 1,
+            int(repeat_count) if repeat_count is not None else 1,
         )
         db.commit()
         return {"created": count, "title": title}
@@ -580,7 +585,7 @@ def groq_agent_reply(messages, db):
     )
     conversation = [{"role": "system", "content": system_message}, *messages]
     actions = []
-    model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+    model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
     for _ in range(5):
         payload = json.dumps({
             "model": model,
@@ -592,7 +597,12 @@ def groq_agent_reply(messages, db):
         request_obj = urllib.request.Request(
             "https://api.groq.com/openai/v1/chat/completions",
             data=payload,
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "User-Agent": "DAYMARK/1.0",
+            },
             method="POST",
         )
         with urllib.request.urlopen(request_obj, timeout=45) as response:
@@ -641,7 +651,19 @@ def agent_chat():
         return jsonify({"reply": reply, "actions": actions})
     except RuntimeError as error:
         return jsonify({"error": str(error)}), 503
-    except (urllib.error.URLError, urllib.error.HTTPError, KeyError, IndexError, json.JSONDecodeError) as error:
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", "replace").strip()
+        try:
+            provider_error = json.loads(detail)
+            detail = provider_error.get("error", {}).get("message", detail)
+        except (json.JSONDecodeError, AttributeError):
+            pass
+        api_key = os.environ.get("GROQ_API_KEY", "")
+        if api_key:
+            detail = detail.replace(api_key, "[redacted]")
+        detail = detail[:500] or str(error.reason)
+        return jsonify({"error": f"Groq returned HTTP {error.code}: {detail}"}), 502
+    except (urllib.error.URLError, KeyError, IndexError, json.JSONDecodeError) as error:
         return jsonify({"error": f"Groq request failed: {error}"}), 502
 
 
