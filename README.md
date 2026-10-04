@@ -214,6 +214,7 @@ sequenceDiagram
 - **Day View**: Focus on maintenance for today or any specific date, featuring overdue task callouts and quick navigation.
 - **Calendar Grid**: Month-at-a-glance view with task density indicators and direct day selection.
 - **Task Management**: Create, edit, prioritize (1–4), assign statuses (`todo`, `doing`, `done`, `blocked`), and link tasks to categories.
+- **Time-aware Scheduling**: Give dated tasks optional start/end times in 24-hour `HH:MM` format. The day view places timed tasks in chronological order and groups flexible tasks separately; overlapping slots are rejected while adjacent slots are allowed.
 - **Category Taxonomy**: Pre-seeded professional domains (Job, Learning, Research, Repos, Projects, Blogs, AI Engineering) with full CRUD support and custom icons/colors.
 - **Git Sync**: Direct version control integration that commits `data/todo.db` and pushes/pulls changes across machines.
 - **Notion-Inspired UI**: Warm neutral color palette, compact toolbars, clear typography (Inter), and keyboard-accessible form controls.

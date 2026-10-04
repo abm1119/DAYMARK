@@ -37,14 +37,35 @@
       <div>
         <label class="block text-sm text-muted mb-1.5">Planned date</label>
         <input type="date" name="due_date" class="input"
-               value="{{ task.due_date if task and task.due_date is defined else '' }}">
+               value="{{ (task.due_date or '') if task and task.due_date is defined else '' }}">
       </div>
       <div>
         <label class="block text-sm text-muted mb-1.5">Deadline</label>
         <input type="date" name="deadline" class="input"
-               value="{{ task.deadline if task and task.deadline is defined else '' }}">
+               value="{{ (task.deadline or '') if task and task.deadline is defined else '' }}">
       </div>
     </div>
+
+    <fieldset class="space-y-2">
+      <legend class="block text-sm text-muted mb-1.5">Time slot · 24-hour clock</legend>
+      <div class="grid grid-cols-2 gap-4">
+        <label>
+          <span class="block text-xs text-muted mb-1">Start</span>
+          <input type="text" name="start_time" class="input" inputmode="numeric"
+                 pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]" maxlength="5"
+                 placeholder="09:00" title="Use 24-hour HH:MM (00:00–23:59)"
+                 value="{{ (task.start_time or '') if task and task.start_time is defined else '' }}">
+        </label>
+        <label>
+          <span class="block text-xs text-muted mb-1">End</span>
+          <input type="text" name="end_time" class="input" inputmode="numeric"
+                 pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]" maxlength="5"
+                 placeholder="10:00" title="Use 24-hour HH:MM (00:00–23:59)"
+                 value="{{ (task.end_time or '') if task and task.end_time is defined else '' }}">
+        </label>
+      </div>
+      <p class="text-xs text-muted">Enter both times and a planned date. Slots on the same day cannot overlap.</p>
+    </fieldset>
 
     {% if mode=='new' %}
       <fieldset class="space-y-2">
