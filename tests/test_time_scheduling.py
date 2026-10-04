@@ -1,7 +1,10 @@
+import json
 import sqlite3
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import app as daymark
 
@@ -227,6 +230,31 @@ class TimeSchedulingTests(unittest.TestCase):
 
         self.assertEqual(listed[0]["start_time"], "14:00")
         self.assertEqual(listed[0]["end_time"], "15:00")
+
+    def test_assistant_prompt_includes_current_local_datetime_and_offset(self):
+        fixed_now = datetime(
+            2026, 10, 4, 17, 35, tzinfo=timezone(timedelta(hours=5))
+        )
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.read.return_value = b'{"choices":[{"message":{"content":"Ready."}}]}'
+
+        with daymark.app.app_context():
+            with patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}):
+                with patch.object(daymark, "datetime") as datetime_mock:
+                    datetime_mock.now.return_value = fixed_now
+                    with patch.object(
+                        daymark.urllib.request, "urlopen", return_value=response
+                    ) as urlopen:
+                        daymark.groq_agent_reply(
+                            [{"role": "user", "content": "Schedule a task later today"}],
+                            daymark.get_db(),
+                        )
+
+        payload = json.loads(urlopen.call_args.args[0].data)
+        system_message = payload["messages"][0]["content"]
+        self.assertIn("2026-10-04T17:35+05:00", system_message)
+        self.assertIn("Interpret relative dates and times using this local context", system_message)
 
     def test_existing_database_migration_preserves_tasks(self):
         legacy_path = Path(self.temp_dir.name) / "legacy.db"

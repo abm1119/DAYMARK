@@ -10,3 +10,10 @@
 - Added nine tests; all pass. Browser verification confirmed task creation, edit values, and the timeline at 320, 375, 414, and 768 px with no horizontal overflow.
 - Fixed null optional form values so an empty deadline stays a valid blank date input.
 - Python diagnostics and `git diff --check` pass. The isolated browser-test server and temporary database were stopped and removed.
+
+## Assistant local-time awareness follow-up
+
+- Updated the assistant prompt to include the current timezone-aware local datetime, including its UTC offset, and to use that context for relative scheduling requests.
+- Added a deterministic test for the outbound assistant prompt without contacting Groq.
+- Playwright reconfirmed the timeline and form; retained the existing readable screenshots after fresh file captures were clipped.
+- Updated PR #2 with this follow-up and its validation results.
