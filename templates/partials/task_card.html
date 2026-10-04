@@ -48,6 +48,9 @@
       {% if task.due_date %}
         <span class="text-muted">Planned {{ task.due_date }}</span>
       {% endif %}
+      {% if task.start_time and task.end_time %}
+        <span class="text-muted task-slot">{{ task.start_time }}–{{ task.end_time }}</span>
+      {% endif %}
       {% if task.deadline %}<span class="text-muted">Deadline {{ task.deadline }}</span>{% endif %}
       {% if task.series_id %}<span class="badge recurrence-badge">Repeats</span>{% endif %}
     </div>

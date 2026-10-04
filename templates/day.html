@@ -33,11 +33,22 @@
     Scheduled · {{ tasks|length }}
   </h2>
   {% if tasks %}
-    <div class="space-y-2" id="task-list">
-      {% for task in tasks %}
-        {% include "partials/task_card.html" %}
-      {% endfor %}
-    </div>
+    {% if timed_tasks %}
+      <h3 class="text-sm text-muted mb-2">Timeline · 24-hour clock</h3>
+      <div class="timeline-list mb-6" id="task-list">
+        {% for task in timed_tasks %}
+          {% include "partials/task_card.html" %}
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if untimed_tasks %}
+      <h3 class="text-sm text-muted mb-2">{% if timed_tasks %}Any time{% else %}Tasks{% endif %}</h3>
+      <div class="space-y-2" {% if not timed_tasks %}id="task-list"{% endif %}>
+        {% for task in untimed_tasks %}
+          {% include "partials/task_card.html" %}
+        {% endfor %}
+      </div>
+    {% endif %}
   {% else %}
     <div class="empty-state">
       <p class="text-muted mb-4">No tasks for this day.</p>

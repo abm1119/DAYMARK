@@ -156,6 +156,12 @@ input[type="color"].input { min-height: 40px; padding: 4px; }
 .task-actions { opacity: 0; transition: opacity var(--dur-short) ease; }
 .task-card:hover .task-actions, .task-card:focus-within .task-actions { opacity: 1; }
 .task-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 8px; color: var(--color-muted); font-size: 11px; }
+.task-slot { color: var(--color-ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.timeline-list { position: relative; display: grid; gap: 8px; padding-left: 20px; }
+.timeline-list::before { position: absolute; top: 8px; bottom: 8px; left: 4px; width: 1px; background: var(--color-rule); content: ""; }
+.timeline-list > .task-card { position: relative; min-width: 0; }
+.timeline-list > .task-card::before { position: absolute; top: 18px; left: -20px; width: 9px; height: 9px; border: 2px solid var(--color-paper); border-radius: 50%; background: var(--color-focus); box-shadow: 0 0 0 1px var(--color-rule); content: ""; }
 
 .calendar-surface { overflow: hidden; }
 .calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
