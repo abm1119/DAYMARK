@@ -70,29 +70,32 @@
     {% if mode=='new' %}
       <fieldset class="space-y-2">
         <legend class="block text-sm text-muted mb-1.5">Repeat</legend>
-        <div class="grid grid-cols-3 gap-3">
+        {% set unit = task.repeat_unit if task and task.repeat_unit is defined else 'none' %}
+        <label class="block max-w-xs">
+          <span class="block text-xs text-muted mb-1">Repeat pattern</span>
+          <select name="repeat_unit" id="repeat-unit" class="input">
+            <option value="none" {% if unit=='none' %}selected{% endif %}>Does not repeat</option>
+            <option value="day" {% if unit=='day' %}selected{% endif %}>Daily</option>
+            <option value="week" {% if unit=='week' %}selected{% endif %}>Weekly</option>
+            <option value="month" {% if unit=='month' %}selected{% endif %}>Monthly</option>
+          </select>
+        </label>
+        <div id="repeat-fields" class="repeat-fields grid grid-cols-2 gap-3" {% if unit=='none' %}hidden{% endif %}>
           <label>
-            <span class="sr-only">Repeat interval</span>
-            <input type="number" name="repeat_interval" class="input" min="1" max="365"
-                   value="{{ task.repeat_interval if task and task.repeat_interval is defined else 1 }}">
+            <span class="block text-xs text-muted mb-1">Repeat interval</span>
+            <span class="repeat-interval-control">
+              <input type="number" name="repeat_interval" class="input" min="1" max="365"
+                     value="{{ task.repeat_interval if task and task.repeat_interval is defined else 1 }}">
+              <span id="repeat-unit-label">{% if unit=='week' %}weeks{% elif unit=='month' %}months{% else %}days{% endif %}</span>
+            </span>
           </label>
           <label>
-            <span class="sr-only">Repeat unit</span>
-            {% set unit = task.repeat_unit if task and task.repeat_unit is defined else 'none' %}
-            <select name="repeat_unit" class="input">
-              <option value="none" {% if unit=='none' %}selected{% endif %}>Once</option>
-              <option value="day" {% if unit=='day' %}selected{% endif %}>Day(s)</option>
-              <option value="week" {% if unit=='week' %}selected{% endif %}>Week(s)</option>
-              <option value="month" {% if unit=='month' %}selected{% endif %}>Month(s)</option>
-            </select>
-          </label>
-          <label>
-            <span class="sr-only">Number of occurrences</span>
+            <span class="block text-xs text-muted mb-1">Total occurrences</span>
             <input type="number" name="repeat_count" class="input" min="1" max="366"
                    value="{{ task.repeat_count if task and task.repeat_count is defined else 1 }}">
           </label>
         </div>
-        <p class="text-xs text-muted">Interval · unit · total occurrences (up to 366)</p>
+        <p class="text-xs text-muted">Repeating tasks are created up front, up to 366 occurrences.</p>
       </fieldset>
     {% elif task and task.series_id %}
       <p class="text-sm text-muted">This is one occurrence in a repeating series. Changes here affect this occurrence only.</p>
@@ -129,4 +132,29 @@
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+  {% if mode=='new' %}
+    <script>
+      (() => {
+        const repeatUnit = document.getElementById('repeat-unit');
+        const repeatFields = document.getElementById('repeat-fields');
+        const repeatInterval = document.querySelector('[name="repeat_interval"]');
+        const repeatUnitLabel = document.getElementById('repeat-unit-label');
+        const updateRepeatLabel = () => {
+          const labels = {day: 'day', week: 'week', month: 'month'};
+          const singular = labels[repeatUnit.value] || 'day';
+          repeatUnitLabel.textContent = Number(repeatInterval.value) === 1 ? singular : `${singular}s`;
+        };
+        const updateRepeatFields = () => {
+          repeatFields.hidden = repeatUnit.value === 'none';
+          updateRepeatLabel();
+        };
+        repeatUnit.addEventListener('change', updateRepeatFields);
+        repeatInterval.addEventListener('input', updateRepeatLabel);
+        updateRepeatFields();
+      })();
+    </script>
+  {% endif %}
 {% endblock %}

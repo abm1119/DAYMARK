@@ -79,19 +79,27 @@
       <header class="agent-header">
         <div>
           <h2 id="agent-title">DAYMARK assistant</h2>
-          <p>Task management · Groq</p>
+          <p>Local history · saved memory · Groq</p>
         </div>
-        <button type="button" class="agent-close" id="agent-close" aria-label="Close assistant">×</button>
+        <div class="agent-header-actions">
+          <button type="button" class="agent-history-clear" id="agent-history-clear" title="Clear saved chat and action history">Clear history</button>
+          <button type="button" class="agent-close" id="agent-close" aria-label="Close assistant">×</button>
+        </div>
       </header>
       <div id="agent-messages" class="agent-messages" aria-live="polite">
-        <p class="agent-message agent-message-assistant">Tell me what you want to plan, update, find, or remove.</p>
+        <p id="agent-welcome" class="agent-message agent-message-assistant">Tell me what you want to plan, update, find, or remove. Say “remember…” to save a preference or goal for future chats.</p>
+        <div id="agent-suggestions" class="agent-suggestions" aria-label="Suggested assistant actions">
+          <button type="button" data-agent-prompt="Review my overdue, today's, and upcoming tasks.">Review due work</button>
+          <button type="button" data-agent-prompt="Help me find an open time slot. Ask me for any missing details.">Find a slot</button>
+          <button type="button" data-agent-prompt="What preferences or goals should I save as long-term memory?">Manage memory</button>
+        </div>
       </div>
       <form id="agent-form" class="agent-form">
         <label class="sr-only" for="agent-input">Message the task assistant</label>
         <textarea id="agent-input" rows="2" maxlength="2000" placeholder="Ask DAYMARK to manage tasks…" required></textarea>
         <button type="submit" id="agent-send" class="btn btn-primary" aria-label="Send message" title="Send message">↑</button>
       </form>
-      <p class="agent-footnote">Task changes are applied immediately.</p>
+      <p class="agent-footnote">History saves to data/assistant_history.log until cleared. Prompts go to Groq; don’t send secrets. Memories stay until forgotten.</p>
     </div>
     <button type="button" id="agent-toggle" class="agent-toggle" aria-label="Open task assistant" aria-expanded="false" aria-controls="agent-panel" title="Open task assistant">
       <img class="agent-logo" src="{{ url_for('static', filename='daymark_logo_wh.png') }}" alt="">
@@ -103,11 +111,26 @@
       const panel = document.getElementById('agent-panel');
       const toggle = document.getElementById('agent-toggle');
       const close = document.getElementById('agent-close');
+      const clearHistory = document.getElementById('agent-history-clear');
       const form = document.getElementById('agent-form');
       const input = document.getElementById('agent-input');
       const send = document.getElementById('agent-send');
       const messagesNode = document.getElementById('agent-messages');
-      const history = [];
+      const storageKey = 'daymark-agent-conversation-id';
+      function newConversationId() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+          return window.crypto.randomUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
+          const random = Math.floor(Math.random() * 16);
+          return (character === 'x' ? random : (random & 3) | 8).toString(16);
+        });
+      }
+      let conversationId = localStorage.getItem(storageKey);
+      if (!conversationId) {
+        conversationId = newConversationId();
+        localStorage.setItem(storageKey, conversationId);
+      }
 
       function setOpen(open) {
         panel.hidden = !open;
@@ -124,8 +147,111 @@
         return message;
       }
 
+      function actionSummary(action) {
+        const result = action.result || {};
+        if (!action.ok) {
+          const actionName = String(action.tool || 'action').replace(/_/g, ' ');
+          return `Could not complete ${actionName}: ${result.error || 'The action failed.'}`;
+        }
+        if (Number.isInteger(result.created)) {
+          const dates = result.dates || [];
+          const dateLabel = dates.length === 1 && dates[0] ? ` on ${dates[0]}` :
+            dates.length > 1 ? ` from ${dates[0]} through ${dates[dates.length - 1]}` : '';
+          const timeLabel = result.start_time && result.end_time ?
+            `, ${result.start_time}–${result.end_time}` : '';
+          const repeatLabel = result.created > 1 ? ` · ${result.created} occurrences` : '';
+          return `Saved “${result.title}”${dateLabel}${timeLabel}${repeatLabel}.`;
+        }
+        if (Number.isInteger(result.updated)) {
+          const changes = result.changes || {};
+          const schedule = [];
+          if (Object.prototype.hasOwnProperty.call(changes, 'due_date')) {
+            schedule.push(changes.due_date || 'unscheduled');
+          }
+          if (changes.start_time && changes.end_time) {
+            schedule.push(`${changes.start_time}–${changes.end_time}`);
+          }
+          return `Updated “${result.title}”${schedule.length ? ` · ${schedule.join(' at ')}` : ''}.`;
+        }
+        if (Number.isInteger(result.deleted)) {
+          return `Deleted “${result.title}”.`;
+        }
+        if (Array.isArray(result.slots)) {
+          const slots = result.slots.map(slot => `${slot.start_time}–${slot.end_time}`).join(', ');
+          return slots ? `Open slots for ${result.due_date}: ${slots}.` :
+            `No open slots found for ${result.due_date}.`;
+        }
+        if (Number.isInteger(result.found)) {
+          const nouns = {
+            list_tasks: 'tasks',
+            list_categories: 'categories',
+            list_memories: 'memories',
+            search_memories: 'memories'
+          };
+          return `Found ${result.found} ${nouns[action.tool] || 'items'}.`;
+        }
+        if (result.saved && Number.isInteger(result.memory_id)) {
+          return `Saved memory #${result.memory_id}: “${result.content}”.`;
+        }
+        if (Number.isInteger(result.forgotten)) {
+          return `Forgot memory #${result.forgotten}.`;
+        }
+        if (result.as_of && Array.isArray(result.overdue)) {
+          const summarize = (label, tasks) => {
+            const names = tasks.slice(0, 4).map(task => task.title).join(', ');
+            return `${label}: ${tasks.length}${names ? ` (${names})` : ''}`;
+          };
+          return `Task briefing · ${result.as_of} · ${summarize('Overdue', result.overdue)} · ${summarize('Today', result.due_today || [])} · ${summarize('Next 7 days', result.upcoming || [])}.`;
+        }
+        return 'Action completed.';
+      }
+
+      function showAction(action) {
+        const message = addMessage('assistant', actionSummary(action));
+        if (action.ok && ['create_task', 'update_task', 'delete_task'].includes(action.tool)) {
+          message.append(document.createTextNode(' '));
+          const link = document.createElement('a');
+          link.href = '{{ url_for("tasks_list") }}';
+          link.className = 'agent-action-link';
+          link.textContent = 'View task list';
+          message.append(link);
+        }
+      }
+
+      function restoreHistory(events) {
+        const welcome = document.getElementById('agent-welcome');
+        const suggestions = document.getElementById('agent-suggestions');
+        if (welcome) welcome.remove();
+        if (suggestions) suggestions.remove();
+        for (const event of events) {
+          if (event.type === 'message') {
+            addMessage(event.role, event.content);
+          } else if (event.type === 'action') {
+            showAction(event);
+          }
+        }
+      }
+
       toggle.addEventListener('click', () => setOpen(panel.hidden));
       close.addEventListener('click', () => setOpen(false));
+      clearHistory.disabled = true;
+      clearHistory.addEventListener('click', async () => {
+        if (!window.confirm('Clear all saved assistant conversations and action history? Saved memories and tasks will remain.')) return;
+        clearHistory.disabled = true;
+        send.disabled = true;
+        try {
+          const response = await fetch('{{ url_for("agent_history") }}', { method: 'DELETE' });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || 'Could not clear assistant history.');
+          messagesNode.replaceChildren();
+          addMessage('assistant', 'History cleared. Saved memories and tasks are unchanged.');
+        } catch (error) {
+          addMessage('assistant', error.message || 'Could not clear assistant history.');
+        } finally {
+          clearHistory.disabled = false;
+          send.disabled = false;
+        }
+      });
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && !panel.hidden) setOpen(false);
       });
@@ -135,34 +261,53 @@
           form.requestSubmit();
         }
       });
+      document.querySelectorAll('[data-agent-prompt]').forEach(button => {
+        button.addEventListener('click', () => {
+          input.value = button.dataset.agentPrompt;
+          form.requestSubmit();
+        });
+      });
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         const content = input.value.trim();
         if (!content || send.disabled) return;
-        history.push({ role: 'user', content });
+        send.disabled = true;
+        await historyReady;
+        clearHistory.disabled = true;
         addMessage('user', content);
         input.value = '';
-        send.disabled = true;
         const pending = addMessage('assistant', 'Working…', true);
         try {
           const response = await fetch('{{ url_for("agent_chat") }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messages: history.slice(-12) })
+            body: JSON.stringify({ conversation_id: conversationId, message: content })
           });
           const result = await response.json();
           pending.remove();
           if (!response.ok) throw new Error(result.error || 'The assistant could not complete that request.');
-          history.push({ role: 'assistant', content: result.reply });
+          for (const action of result.actions || []) {
+            showAction(action);
+          }
           addMessage('assistant', result.reply);
         } catch (error) {
           pending.remove();
           addMessage('assistant', error.message || 'The assistant could not reach Groq.');
         } finally {
           send.disabled = false;
+          clearHistory.disabled = false;
           input.focus();
         }
       });
+
+      const historyReady = fetch(`{{ url_for("agent_history") }}?conversation_id=${encodeURIComponent(conversationId)}`)
+        .then(async response => {
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || 'Could not load assistant history.');
+          if (result.events.length) restoreHistory(result.events);
+        })
+        .catch(error => addMessage('assistant', error.message || 'Could not load assistant history.'))
+        .finally(() => { clearHistory.disabled = false; });
     })();
   </script>
 </body>

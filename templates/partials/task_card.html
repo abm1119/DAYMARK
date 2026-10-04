@@ -52,7 +52,12 @@
         <span class="text-muted task-slot">{{ task.start_time }}–{{ task.end_time }}</span>
       {% endif %}
       {% if task.deadline %}<span class="text-muted">Deadline {{ task.deadline }}</span>{% endif %}
-      {% if task.series_id %}<span class="badge recurrence-badge">Repeats</span>{% endif %}
+      {% if task.series_id %}
+        <span class="badge recurrence-badge">
+          {{ recurrence_label(task.recurrence_unit, task.recurrence_interval) }}
+          · {{ task.recurrence_count }} total
+        </span>
+      {% endif %}
     </div>
   </div>
 </div>
