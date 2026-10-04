@@ -3,6 +3,8 @@ __pycache__/
 *.pyc
 .env
 *.db-journal
+data/assistant_history.log
+data/assistant_memory.db
 .DS_Store
 .agents/
 .hallmark/
